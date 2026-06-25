@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Space I — $SPI Exchange</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0d14;
+  --surface:#111520;
+  --surface2:#181e2e;
+  --surface3:#1f2640;
+  --border:rgba(255,255,255,0.07);
+  --border2:rgba(255,255,255,0.13);
+  --text:#e8eaf2;
+  --muted:#6b7299;
+  --muted2:#9098b8;
+  --accent:#4f8ef7;
+  --accent-dim:#1a2d54;
+  --green:#22c97a;
+  --green-dim:#0d3324;
+  --red:#f05252;
+  --red-dim:#3b1010;
+  --amber:#f5a623;
+  --amber-dim:#3a2608;
+  --radius:10px;
+  --radius-lg:14px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+
+/* AUTH SCREEN */
+#auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem}
+.auth-card{background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--radius-lg);padding:2rem;width:100%;max-width:400px}
+.auth-logo{text-align:center;margin-bottom:1.5rem}
+.auth-logo .rocket{font-size:36px}
+.auth-logo h1{font-size:22px;font-weight:600;letter-spacing:-0.02em;margin-top:8px;color:var(--text)}
+.auth-logo p{font-size:12px;color:var(--muted);margin-top:4px}
+.auth-tabs{display:flex;gap:0;background:var(--surface2);border-radius:var(--radius);padding:3px;margin-bottom:1.5rem}
+.auth-tab{flex:1;padding:8px;text-align:center;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-radius:8px;transition:all 0.2s}
+.auth-tab.active{background:var(--surface3);color:var(--text)}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;color:var(--muted2);margin-bottom:6px;font-weight:500}
+.field input{width:100%;background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--radius);padding:10px 12px;color:var(--text);font-size:14px;font-family:inherit;outline:none;transition:border-color 0.2s}
+.field input:focus{border-color:var(--accent)}
+.btn-primary{width:100%;padding:11px;background:var(--accent);border:none;border-radius:var(--radius);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity 0.15s;margin-top:4px}
+.btn-primary:hover{opacity:0.88}
+.auth-error{font-size:12px;color:var(--red);margin-top:8px;text-align:center;min-height:18px}
+.auth-hint{font-size:12px;color:var(--muted);text-align:center;margin-top:12px}
+.auth-hint span{color:var(--accent);cursor:pointer}
+
+/* MAIN APP */
+#app{display:none;flex-direction:column;min-height:100vh}
+
+/* NAV */
+nav{background:var(--surface);border-bottom:0.5px solid var(--border);display:flex;align-items:center;padding:0 1.5rem;height:54px;gap:1rem;position:sticky;top:0;z-index:100}
+.nav-logo{display:flex;align-items:center;gap:8px;font-weight:600;font-size:15px;letter-spacing:-0.01em}
+.nav-logo .dot{width:8px;height:8px;background:var(--green);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.nav-ticker{font-size:13px;color:var(--muted);margin-left:auto}
+.nav-ticker strong{color:var(--text);font-weight:600}
+.nav-user{display:flex;align-items:center;gap:10px;margin-left:1rem}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--accent-dim);border:0.5px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--accent)}
+.btn-logout{background:none;border:0.5px solid var(--border2);border-radius:8px;color:var(--muted);padding:5px 10px;font-size:12px;cursor:pointer;font-family:inherit;transition:color 0.15s}
+.btn-logout:hover{color:var(--text)}
+
+/* TAPE */
+.tape-wrap{background:var(--surface);border-bottom:0.5px solid var(--border);overflow:hidden;white-space:nowrap;padding:6px 0;font-size:12px;color:var(--muted)}
+.tape-inner{display:inline-block;animation:tape 40s linear infinite}
+@keyframes tape{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* LAYOUT */
+.app-body{display:grid;grid-template-columns:1fr 340px;gap:1rem;padding:1rem 1.5rem;max-width:1200px;margin:0 auto;width:100%}
+@media(max-width:900px){.app-body{grid-template-columns:1fr;padding:1rem}}
+
+/* CARDS */
+.panel{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1rem}
+.panel-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:1rem}
+
+/* PRICE HEADER */
+.price-row{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.25rem}
+.price-left h2{font-size:13px;color:var(--muted);margin-bottom:4px}
+.price-main{font-size:42px;font-weight:700;letter-spacing:-0.03em;line-height:1;color:var(--text)}
+.change-pill{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:600;padding:4px 10px;border-radius:6px;margin-top:8px}
+.pill-up{background:var(--green-dim);color:var(--green)}
+.pill-down{background:var(--red-dim);color:var(--red)}
+.pill-flat{background:var(--surface2);color:var(--muted)}
+
+/* METRICS */
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1.25rem}
+.metric{background:var(--surface2);border-radius:var(--radius);padding:10px 12px}
+.metric-label{font-size:11px;color:var(--muted);margin-bottom:4px}
+.metric-val{font-size:15px;font-weight:600;color:var(--text)}
+
+/* CHART */
+.chart-box{position:relative;height:220px;margin-bottom:0}
+
+/* RIGHT COLUMN */
+/* Wallet card */
+.wallet-balance{text-align:center;padding:1rem 0}
+.wallet-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px}
+.wallet-amount{font-size:32px;font-weight:700;letter-spacing:-0.02em;color:var(--text)}
+.wallet-sub{font-size:12px;color:var(--muted);margin-top:4px}
+.divider{border:none;border-top:0.5px solid var(--border);margin:1rem 0}
+
+/* PORTFOLIO */
+.portfolio-empty{text-align:center;padding:1.5rem;color:var(--muted);font-size:13px}
+.holding-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid var(--border)}
+.holding-row:last-child{border-bottom:none}
+.holding-name{font-size:13px;font-weight:600;color:var(--text)}
+.holding-qty{font-size:12px;color:var(--muted);margin-top:2px}
+.holding-value{text-align:right}
+.holding-usd{font-size:14px;font-weight:600;color:var(--text)}
+.holding-pnl{font-size:12px;margin-top:2px}
+.pnl-up{color:var(--green)}
+.pnl-down{color:var(--red)}
+
+/* BUY/SELL */
+.trade-tabs{display:flex;gap:0;background:var(--surface2);border-radius:var(--radius);padding:3px;margin-bottom:1rem}
+.trade-tab{flex:1;padding:7px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;border-radius:8px;transition:all 0.2s;color:var(--muted)}
+.trade-tab.buy-active{background:var(--green-dim);color:var(--green)}
+.trade-tab.sell-active{background:var(--red-dim);color:var(--red)}
+.qty-row{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.qty-row input{flex:1;background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--radius);padding:10px 12px;color:var(--text);font-size:16px;font-family:inherit;outline:none;text-align:center;font-weight:600}
+.qty-row input:focus{border-color:var(--accent)}
+.qty-btn{width:36px;height:36px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--radius);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.trade-summary{background:var(--surface2);border-radius:var(--radius);padding:10px 12px;margin-bottom:12px;font-size:13px}
+.trade-summary-row{display:flex;justify-content:space-between;color:var(--muted);margin-bottom:4px}
+.trade-summary-row:last-child{margin-bottom:0;color:var(--text);font-weight:600;border-top:0.5px solid var(--border);padding-top:6px;margin-top:6px}
+.btn-buy{width:100%;padding:11px;background:var(--green);border:none;border-radius:var(--radius);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity 0.15s}
+.btn-buy:hover{opacity:0.85}
+.btn-sell{width:100%;padding:11px;background:var(--red);border:none;border-radius:var(--radius);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity 0.15s}
+.btn-sell:hover{opacity:0.85}
+.trade-msg{font-size:12px;min-height:18px;margin-top:8px;text-align:center;color:var(--muted)}
+
+/* NEWS */
+.news-list{display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto}
+.news-item{font-size:12px;padding:8px 10px;border-radius:8px;border-left:3px solid transparent;background:var(--surface2);color:var(--muted2)}
+.news-item.positive{border-left-color:var(--green)}
+.news-item.negative{border-left-color:var(--red)}
+.news-item.neutral-n{border-left-color:var(--muted)}
+.news-time{font-size:11px;color:var(--muted);margin-right:6px}
+
+/* ADMIN PANEL */
+.admin-badge{display:inline-flex;align-items:center;gap:4px;background:var(--amber-dim);color:var(--amber);font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;margin-left:8px}
+.event-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.evt-btn{padding:12px 8px;border-radius:var(--radius);border:0.5px solid var(--border2);cursor:pointer;font-size:12px;font-weight:600;text-align:center;background:var(--surface2);color:var(--text);font-family:inherit;transition:all 0.15s;display:flex;flex-direction:column;align-items:center;gap:4px}
+.evt-btn:hover{border-color:var(--border2);opacity:0.85}
+.evt-btn:active{transform:scale(0.97)}
+.evt-explosion{border-color:var(--red);color:var(--red);background:var(--red-dim)}
+.evt-success{border-color:var(--green);color:var(--green);background:var(--green-dim)}
+.evt-announce{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+.evt-turbulence{border-color:var(--amber);color:var(--amber);background:var(--amber-dim)}
+.custom-row{display:flex;gap:6px;margin-top:6px}
+.custom-row input{flex:1;background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--radius);padding:9px 10px;color:var(--text);font-size:12px;font-family:inherit;outline:none}
+.custom-row input:focus{border-color:var(--accent)}
+.custom-row select{background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--radius);color:var(--text);padding:9px 8px;font-size:12px;font-family:inherit;outline:none}
+.custom-row button{background:var(--accent);border:none;border-radius:var(--radius);color:#fff;padding:9px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+
+/* USERS TABLE (admin) */
+.users-table{width:100%;border-collapse:collapse;font-size:12px}
+.users-table th{color:var(--muted);font-weight:500;text-align:left;padding:6px 0;border-bottom:0.5px solid var(--border)}
+.users-table td{padding:8px 0;border-bottom:0.5px solid var(--border);color:var(--text)}
+.users-table tr:last-child td{border-bottom:none}
+
+/* TOAST */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;background:var(--surface3);border:0.5px solid var(--border2);border-radius:var(--radius-lg);padding:12px 16px;font-size:13px;color:var(--text);max-width:300px;opacity:0;transform:translateY(10px);transition:all 0.3s;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+
+.hidden{display:none!important}
+
+/* ADMIN CREATE USER */
+.create-user-form{background:var(--surface2);border-radius:var(--radius);padding:1rem;margin-bottom:1rem}
+.create-user-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.cu-field input{width:100%;background:var(--surface3);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;color:var(--text);font-size:12px;font-family:inherit;outline:none}
+.cu-field input:focus{border-color:var(--accent)}
+.cu-field label{display:block;font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em}
+.cu-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px}
+.btn-create-user{width:100%;padding:9px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity 0.15s}
+.btn-create-user:hover{opacity:0.85}
+.cu-error{font-size:11px;color:var(--red);min-height:16px;margin-top:4px}
+
+/* USERS TABLE improved */
+.users-table{width:100%;border-collapse:collapse;font-size:12px}
+.users-table th{color:var(--muted);font-weight:500;text-align:left;padding:6px 4px;border-bottom:0.5px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:0.05em}
+.users-table td{padding:9px 4px;border-bottom:0.5px solid var(--border);color:var(--text);vertical-align:middle}
+.users-table tr:last-child td{border-bottom:none}
+.users-table tr:hover td{background:var(--surface2)}
+.pnl-cell-up{color:var(--green);font-weight:600}
+.pnl-cell-down{color:var(--red);font-weight:600}
+.btn-delete-user{background:none;border:0.5px solid var(--border2);border-radius:6px;color:var(--muted);padding:3px 7px;font-size:11px;cursor:pointer;font-family:inherit;transition:all 0.15s}
+.btn-delete-user:hover{border-color:var(--red);color:var(--red)}
+.btn-edit-shares{background:none;border:none;cursor:pointer;font-size:13px;padding:1px 3px;opacity:0.6;transition:opacity 0.15s}
+.btn-edit-shares:hover{opacity:1}
+.btn-save-shares{background:var(--green-dim);border:0.5px solid var(--green);border-radius:6px;color:var(--green);padding:3px 8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-cancel-shares{background:var(--surface3);border:0.5px solid var(--border2);border-radius:6px;color:var(--muted);padding:3px 7px;font-size:12px;cursor:pointer;font-family:inherit}
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="rocket">🚀</div>
+      <h1>Space I Exchange</h1>
+      <p>Mercado de acciones $SPI</p>
+    </div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Iniciar sesión</div>
+      <div class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">Crear cuenta</div>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="form-login">
+      <div class="field"><label>Usuario</label><input type="text" id="login-user" placeholder="tu_usuario"/></div>
+      <div class="field"><label>Contraseña</label><input type="password" id="login-pass" placeholder="••••••••"/></div>
+      <button class="btn-primary" onclick="doLogin()">Entrar al mercado</button>
+      <div class="auth-error" id="login-error"></div>
+      <p class="auth-hint">¿No tienes cuenta? <span onclick="switchAuthTab('register')">Regístrate gratis</span></p>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="form-register" class="hidden">
+      <div class="field"><label>Nombre completo</label><input type="text" id="reg-name" placeholder="Ana García"/></div>
+      <div class="field"><label>Usuario</label><input type="text" id="reg-user" placeholder="ana_garcia"/></div>
+      <div class="field"><label>Contraseña</label><input type="password" id="reg-pass" placeholder="Mín. 4 caracteres"/></div>
+      <button class="btn-primary" onclick="doRegister()">Crear cuenta — $5,000 de inicio</button>
+      <div class="auth-error" id="reg-error"></div>
+      <p class="auth-hint">¿Ya tienes cuenta? <span onclick="switchAuthTab('login')">Inicia sesión</span></p>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <nav>
+    <div class="nav-logo">
+      <span>🚀</span>
+      <span>Space I</span>
+      <div class="dot"></div>
+    </div>
+    <div class="nav-ticker">
+      $SPI &nbsp;<strong id="nav-price">$165.00</strong>&nbsp;
+      <span id="nav-change" style="color:var(--muted)">0.00%</span>
+    </div>
+    <div class="nav-user">
+      <div class="avatar" id="nav-avatar">?</div>
+      <span id="nav-username" style="font-size:13px;color:var(--muted2)"></span>
+      <button class="btn-logout" onclick="doLogout()"><i class="ti ti-logout"></i> Salir</button>
+    </div>
+  </nav>
+
+  <div class="tape-wrap">
+    <span class="tape-inner" id="tape">$SPI 165.00 ▲ &nbsp;·&nbsp; NASDAQ 18,432 &nbsp;·&nbsp; S&P500 5,218 &nbsp;·&nbsp; AAPL 223.50 &nbsp;·&nbsp; TSLA 178.20 &nbsp;·&nbsp; AMZN 198.40 &nbsp;·&nbsp; $SPI 165.00 ▲ &nbsp;·&nbsp; NASDAQ 18,432 &nbsp;·&nbsp; S&P500 5,218 &nbsp;·&nbsp; AAPL 223.50 &nbsp;·&nbsp; TSLA 178.20 &nbsp;·&nbsp; AMZN 198.40 &nbsp;·&nbsp;</span>
+  </div>
+
+  <div style="background:var(--surface);border-bottom:0.5px solid var(--border);padding:5px 1.5rem;font-size:12px;color:var(--muted);text-align:center;" id="market-status">Cargando estado del mercado...</div>
+
+  <div class="app-body">
+
+    <!-- LEFT COLUMN -->
+    <div>
+      <!-- Price header -->
+      <div class="panel">
+        <div class="price-row">
+          <div class="price-left">
+            <h2>Space I Corporation &nbsp;·&nbsp; $SPI</h2>
+            <div class="price-main" id="price-main">$165.00</div>
+            <span class="change-pill pill-flat" id="change-pill">
+              <i class="ti ti-minus"></i>
+              <span id="change-text">$0.00 (0.00%)</span>
+            </span>
+          </div>
+        </div>
+        <div class="metrics">
+          <div class="metric"><div class="metric-label">Apertura</div><div class="metric-val" id="m-open">$165.00</div></div>
+          <div class="metric"><div class="metric-label">Máximo</div><div class="metric-val" id="m-high">$165.00</div></div>
+          <div class="metric"><div class="metric-label">Mínimo</div><div class="metric-val" id="m-low">$165.00</div></div>
+          <div class="metric"><div class="metric-label">Volumen</div><div class="metric-val" id="m-vol">2.4M</div></div>
+          <div class="metric"><div class="metric-label">Cap. mercado</div><div class="metric-val" id="m-cap">$4.12B</div></div>
+          <div class="metric"><div class="metric-label">P/E</div><div class="metric-val" id="m-pe">24.8</div></div>
+        </div>
+        <div class="chart-box">
+          <canvas id="stockChart" role="img" aria-label="Gráfico intradía de $SPI">Historial de precios Space I $SPI.</canvas>
+        </div>
+      </div>
+
+      <!-- News -->
+      <div class="panel">
+        <div class="panel-title">Noticias del mercado</div>
+        <div class="news-list" id="news-list">
+          <div class="news-item neutral-n"><span class="news-time">09:30</span>Space I $SPI abre operaciones a $165.00</div>
+        </div>
+      </div>
+
+      <!-- ADMIN PANEL (solo admin) -->
+      <div class="panel hidden" id="admin-panel">
+        <div class="panel-title">
+          Panel de administración
+          <span class="admin-badge"><i class="ti ti-shield"></i> Admin</span>
+        </div>
+
+        <!-- Market toggle -->
+        <div style="margin-bottom:1rem">
+          <button id="market-toggle-btn"
+            onclick="setMarketOverride(marketOverride===true ? false : true)"
+            style="width:100%;padding:13px;border-radius:var(--radius);border:0.5px solid var(--green);background:var(--green-dim);color:var(--green);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.2s">
+            🟢 Abrir mercado
+          </button>
+          <div style="text-align:center;margin-top:6px">
+            <span style="font-size:11px;color:var(--muted)">Modo automático: </span>
+            <button onclick="setMarketOverride(null)"
+              style="background:none;border:none;color:var(--accent);font-size:11px;cursor:pointer;font-family:inherit;text-decoration:underline">
+              restablecer horario GMT-6
+            </button>
+          </div>
+        </div>
+
+        <div class="event-grid">
+          <button class="evt-btn evt-explosion" onclick="triggerEvent('explosion')">
+            <span style="font-size:20px">💥</span> Cohete explotó
+          </button>
+          <button class="evt-btn evt-success" onclick="triggerEvent('success')">
+            <span style="font-size:20px">🚀</span> Misión exitosa
+          </button>
+          <button class="evt-btn evt-announce" onclick="triggerEvent('announcement')">
+            <span style="font-size:20px">📢</span> Anuncio positivo
+          </button>
+          <button class="evt-btn evt-turbulence" onclick="triggerEvent('turbulence')">
+            <span style="font-size:20px">📉</span> Turbulencia
+          </button>
+        </div>
+        <div class="custom-row">
+          <input type="text" id="custom-text" placeholder="Evento personalizado..."/>
+          <select id="custom-dir"><option value="up">↑ Sube</option><option value="down">↓ Baja</option></select>
+          <button onclick="triggerCustom()">Publicar</button>
+        </div>
+
+        <!-- Create user -->
+        <div style="margin-top:1.25rem">
+          <div class="panel-title">Crear usuario</div>
+          <div class="create-user-form">
+            <div class="create-user-grid">
+              <div class="cu-field"><label>Nombre completo</label><input type="text" id="cu-name" placeholder="Ana García"/></div>
+              <div class="cu-field"><label>Usuario</label><input type="text" id="cu-user" placeholder="ana_garcia"/></div>
+            </div>
+            <div class="cu-row3">
+              <div class="cu-field"><label>Contraseña</label><input type="password" id="cu-pass" placeholder="••••••"/></div>
+              <div class="cu-field"><label>Saldo inicial ($)</label><input type="number" id="cu-cash" placeholder="5000" value="5000" min="0"/></div>
+              <div class="cu-field"><label>Acciones $SPI</label><input type="number" id="cu-shares" placeholder="0" value="0" min="0"/></div>
+            </div>
+            <button class="btn-create-user" onclick="adminCreateUser()">➕ Crear usuario</button>
+            <div class="cu-error" id="cu-error"></div>
+          </div>
+        </div>
+
+        <!-- Users table -->
+        <div style="margin-top:0.5rem">
+          <div class="panel-title">Usuarios registrados</div>
+          <table class="users-table" id="users-table">
+            <thead><tr><th>Usuario</th><th>Saldo</th><th>Acciones</th><th>Valor posición</th><th>G/P</th><th></th></tr></thead>
+            <tbody id="users-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div>
+
+      <!-- Wallet -->
+      <div class="panel">
+        <div class="panel-title">Mi cartera</div>
+        <div class="wallet-balance">
+          <div class="wallet-label">Saldo disponible</div>
+          <div class="wallet-amount" id="wallet-cash">$5,000.00</div>
+          <div class="wallet-sub" id="wallet-total">Total portafolio: $5,000.00</div>
+        </div>
+        <hr class="divider"/>
+        <div class="panel-title">Mis posiciones</div>
+        <div id="portfolio-area">
+          <div class="portfolio-empty">No tienes acciones aún.<br>¡Compra tu primera acción!</div>
+        </div>
+      </div>
+
+      <!-- Trade -->
+      <div class="panel">
+        <div class="panel-title">Operar $SPI</div>
+        <div class="trade-tabs">
+          <div class="trade-tab buy-active" id="tab-buy" onclick="setTradeMode('buy')">Comprar</div>
+          <div class="trade-tab" id="tab-sell" onclick="setTradeMode('sell')">Vender</div>
+        </div>
+        <div class="qty-row">
+          <button class="qty-btn" onclick="adjustQty(-1)">−</button>
+          <input type="number" id="trade-qty" value="1" min="1" oninput="refreshTrade()"/>
+          <button class="qty-btn" onclick="adjustQty(1)">+</button>
+        </div>
+        <div class="trade-summary">
+          <div class="trade-summary-row"><span>Precio por acción</span><span id="ts-price">$165.00</span></div>
+          <div class="trade-summary-row"><span>Cantidad</span><span id="ts-qty">1</span></div>
+          <div class="trade-summary-row"><span id="ts-label">Total a pagar</span><span id="ts-total">$165.00</span></div>
+        </div>
+        <button class="btn-buy" id="trade-btn" onclick="executeTrade()">Comprar 1 acción</button>
+        <div class="trade-msg" id="trade-msg"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+// ── DATA STORE ──────────────────────────────────────────────
+const ADMIN_USER = 'admin';
+const ADMIN_PASS = 'admin123';
+const OPEN_PRICE = 165.00;
+let marketOverride = null; // null=auto, true=forzado abierto, false=forzado cerrado
+
+// Simple in-memory store (persists while page is open)
+let db = {
+  users: {
+    admin: { name:'Administrador', password: ADMIN_PASS, isAdmin:true, cash:0, holdings:0, avgCost:0 }
+  }
+};
+
+let currentUser = null;
+let currentPrice = 165.00;
+let high = 165.00, low = 165.00, volume = 2400000;
+let priceHistory = [], timeLabels = [];
+let marketMinute = 0;
+let tradeMode = 'buy';
+
+// ── AUTH ─────────────────────────────────────────────────────
+function switchAuthTab(tab){
+  document.getElementById('tab-login').classList.toggle('active', tab==='login');
+  document.getElementById('tab-register').classList.toggle('active', tab==='register');
+  document.getElementById('form-login').classList.toggle('hidden', tab!=='login');
+  document.getElementById('form-register').classList.toggle('hidden', tab!=='register');
+  document.getElementById('login-error').textContent='';
+  document.getElementById('reg-error').textContent='';
+}
+
+function doLogin(){
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value;
+  const err = document.getElementById('login-error');
+  if(!u||!p){err.textContent='Completa todos los campos.';return;}
+  const usr = db.users[u];
+  if(!usr||usr.password!==p){err.textContent='Usuario o contraseña incorrectos.';return;}
+  currentUser = u;
+  launchApp();
+}
+
+function doRegister(){
+  const name = document.getElementById('reg-name').value.trim();
+  const u = document.getElementById('reg-user').value.trim().toLowerCase();
+  const p = document.getElementById('reg-pass').value;
+  const err = document.getElementById('reg-error');
+  if(!name||!u||!p){err.textContent='Completa todos los campos.';return;}
+  if(p.length<4){err.textContent='La contraseña debe tener al menos 4 caracteres.';return;}
+  if(db.users[u]){err.textContent='Ese nombre de usuario ya existe.';return;}
+  if(u==='admin'){err.textContent='Ese nombre de usuario no está disponible.';return;}
+  db.users[u] = { name, password:p, isAdmin:false, cash:5000, holdings:0, avgCost:0 };
+  currentUser = u;
+  launchApp();
+}
+
+function doLogout(){
+  currentUser = null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('auth-screen').style.display='flex';
+  document.getElementById('login-user').value='';
+  document.getElementById('login-pass').value='';
+  document.getElementById('login-error').textContent='';
+}
+
+function launchApp(){
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  const usr = db.users[currentUser];
+  document.getElementById('nav-avatar').textContent = usr.name.charAt(0).toUpperCase();
+  document.getElementById('nav-username').textContent = usr.name;
+  document.getElementById('admin-panel').classList.toggle('hidden', !usr.isAdmin);
+  refreshWallet();
+  refreshTrade();
+  updateUI();
+  if(usr.isAdmin) refreshUsersTable();
+}
+
+// ── MARKET DATA ───────────────────────────────────────────────
+// GMT-6: mercado abre 14:00, cierra 21:00
+const MARKET_OPEN_H  = 8;
+const MARKET_OPEN_M  = 30;
+const MARKET_CLOSE_H = 15;
+const MARKET_CLOSE_M = 0;
+
+function nowGMT6(){
+  const now = new Date();
+  // UTC offset for GMT-6 is -360 minutes
+  const utc = now.getTime() + now.getTimezoneOffset()*60000;
+  return new Date(utc - 6*3600000);
+}
+
+function isMarketOpen(){
+  if(marketOverride !== null) return marketOverride;
+  const t = nowGMT6();
+  const h = t.getHours(), m = t.getMinutes();
+  const mins = h*60+m;
+  return mins >= MARKET_OPEN_H*60+MARKET_OPEN_M && mins < MARKET_CLOSE_H*60+MARKET_CLOSE_M;
+}
+
+function setMarketOverride(state){
+  marketOverride = state;
+  updateMarketToggleBtn();
+  updateStatusBar();
+  if(state) showToast('🟢 Mercado abierto manualmente');
+  else if(state===false) showToast('🔴 Mercado cerrado manualmente');
+  else showToast('🔄 Mercado en modo automático');
+}
+
+function updateMarketToggleBtn(){
+  const btn = document.getElementById('market-toggle-btn');
+  if(!btn) return;
+  if(marketOverride === true){
+    btn.textContent = '🔴 Cerrar mercado';
+    btn.style.background = 'var(--red-dim)';
+    btn.style.color = 'var(--red)';
+    btn.style.borderColor = 'var(--red)';
+  } else if(marketOverride === false){
+    btn.textContent = '🟢 Abrir mercado';
+    btn.style.background = 'var(--green-dim)';
+    btn.style.color = 'var(--green)';
+    btn.style.borderColor = 'var(--green)';
+  } else {
+    btn.textContent = '🟢 Abrir mercado';
+    btn.style.background = 'var(--green-dim)';
+    btn.style.color = 'var(--green)';
+    btn.style.borderColor = 'var(--green)';
+  }
+}
+
+function realTimeLabel(){
+  const t = nowGMT6();
+  const h = t.getHours(), m = t.getMinutes();
+  return (h<10?'0'+h:h)+':'+(m<10?'0'+m:m);
+}
+
+function getTime(offset){
+  // fallback for pre-market seeding: offset from 14:00
+  const totalMins = MARKET_OPEN_H*60 + MARKET_OPEN_M + offset;
+  const h = Math.floor(totalMins/60), m = totalMins%60;
+  return (h<10?'0'+h:h)+':'+(m<10?'0'+m:m);
+}
+
+// Seed history from 14:00 up to current minute (or just a few points if pre-market)
+(function seedHistory(){
+  const t = nowGMT6();
+  const nowMins = t.getHours()*60+t.getMinutes();
+  const openMins = MARKET_OPEN_H*60+MARKET_OPEN_M;
+  const elapsed = Math.max(0, Math.min(nowMins - openMins, 30));
+  const points = Math.max(2, elapsed);
+  for(let i=0;i<points;i++){
+    const p=Math.max(1, OPEN_PRICE+(i*0.02)+((Math.random()-0.5)*1.2));
+    priceHistory.push(parseFloat(p.toFixed(2)));
+    timeLabels.push(getTime(i));
+    if(p>high)high=p; if(p<low)low=p;
+  }
+  currentPrice=priceHistory[priceHistory.length-1];
+  marketMinute=points;
+})();
+
+const ctx=document.getElementById('stockChart').getContext('2d');
+const chart=new Chart(ctx,{
+  type:'line',
+  data:{labels:timeLabels,datasets:[{label:'$SPI',data:priceHistory,borderColor:'#4f8ef7',borderWidth:2,pointRadius:0,tension:0.3,fill:true,backgroundColor:'rgba(79,142,247,0.08)'}]},
+  options:{responsive:true,maintainAspectRatio:false,animation:{duration:200},
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'$'+c.parsed.y.toFixed(2)}}},
+    scales:{
+      x:{ticks:{maxTicksLimit:8,font:{size:11},color:'#6b7299',maxRotation:0,autoSkip:true},grid:{display:false},border:{display:false}},
+      y:{ticks:{font:{size:11},color:'#6b7299',callback:v=>'$'+v.toFixed(0)},grid:{color:'rgba(107,114,153,0.15)'},border:{display:false}}
+    }}
+});
+
+function pushPrice(p, useRealTime){
+  marketMinute++;
+  p=Math.max(0.01,parseFloat(p.toFixed(2)));
+  const label = useRealTime ? realTimeLabel() : getTime(marketMinute);
+  priceHistory.push(p); timeLabels.push(label);
+  if(priceHistory.length>390){priceHistory.shift();timeLabels.shift();}
+  chart.data.labels=timeLabels; chart.data.datasets[0].data=priceHistory;
+  if(p>high)high=p; if(p<low)low=p;
+  currentPrice=p;
+  updateUI();
+  if(currentUser) refreshWallet();
+}
+
+function updateUI(){
+  const p=currentPrice, diff=p-OPEN_PRICE, pct=(diff/OPEN_PRICE*100);
+  document.getElementById('price-main').textContent='$'+p.toFixed(2);
+  document.getElementById('nav-price').textContent='$'+p.toFixed(2);
+  document.getElementById('nav-change').textContent=(pct>=0?'+':'')+pct.toFixed(2)+'%';
+  document.getElementById('nav-change').style.color=pct>=0?'var(--green)':'var(--red)';
+  const pillEl=document.getElementById('change-pill');
+  const ct=document.getElementById('change-text');
+  ct.textContent=(diff>=0?'+':'')+'$'+Math.abs(diff).toFixed(2)+' ('+(pct>=0?'+':'')+pct.toFixed(2)+'%)';
+  pillEl.className='change-pill '+(diff>0.005?'pill-up':diff<-0.005?'pill-down':'pill-flat');
+  pillEl.querySelector('i').className='ti '+(diff>0.005?'ti-trending-up':diff<-0.005?'ti-trending-down':'ti-minus');
+  document.getElementById('m-high').textContent='$'+high.toFixed(2);
+  document.getElementById('m-low').textContent='$'+low.toFixed(2);
+  document.getElementById('m-vol').textContent=(volume/1e6).toFixed(1)+'M';
+  document.getElementById('m-cap').textContent='$'+(p*25e6/1e9).toFixed(2)+'B';
+  document.getElementById('m-pe').textContent=(p/6.65).toFixed(1);
+  const color=diff>=0?'#22c97a':'#f05252';
+  chart.data.datasets[0].borderColor=color;
+  chart.data.datasets[0].backgroundColor=diff>=0?'rgba(34,201,122,0.08)':'rgba(240,82,82,0.08)';
+  chart.update('none');
+  updateTape();
+  refreshTrade();
+  if(currentUser&&db.users[currentUser]?.isAdmin) refreshUsersTable();
+}
+
+function updateTape(){
+  const diff=currentPrice-OPEN_PRICE, sym=diff>=0?'▲':'▼';
+  const base='$SPI '+currentPrice.toFixed(2)+' '+sym+' &nbsp;·&nbsp; NASDAQ 18,432 &nbsp;·&nbsp; S&P500 5,218 &nbsp;·&nbsp; AAPL 223.50 &nbsp;·&nbsp; TSLA 178.20 &nbsp;·&nbsp; AMZN 198.40 &nbsp;·&nbsp; ';
+  document.getElementById('tape').innerHTML=base+base;
+}
+
+// ── WALLET & PORTFOLIO ────────────────────────────────────────
+function refreshWallet(){
+  if(!currentUser)return;
+  const usr=db.users[currentUser];
+  if(usr.isAdmin)return;
+  const holdVal=usr.holdings*currentPrice;
+  const total=usr.cash+holdVal;
+  document.getElementById('wallet-cash').textContent='$'+usr.cash.toFixed(2);
+  document.getElementById('wallet-total').textContent='Total portafolio: $'+total.toFixed(2);
+
+  const area=document.getElementById('portfolio-area');
+  if(usr.holdings<=0){
+    area.innerHTML='<div class="portfolio-empty">No tienes acciones aún.<br>¡Compra tu primera acción!</div>';
+    return;
+  }
+  const invested=usr.holdings*usr.avgCost;
+  const pnl=holdVal-invested;
+  const pnlPct=(pnl/invested*100);
+  const pnlClass=pnl>=0?'pnl-up':'pnl-down';
+  const pnlSign=pnl>=0?'+':'';
+  area.innerHTML=`
+    <div class="holding-row">
+      <div>
+        <div class="holding-name">$SPI — Space I</div>
+        <div class="holding-qty">${usr.holdings} acciones · coste medio $${usr.avgCost.toFixed(2)}</div>
+      </div>
+      <div class="holding-value">
+        <div class="holding-usd">$${holdVal.toFixed(2)}</div>
+        <div class="holding-pnl ${pnlClass}">${pnlSign}$${pnl.toFixed(2)} (${pnlSign}${pnlPct.toFixed(2)}%)</div>
+      </div>
+    </div>`;
+}
+
+// ── TRADE ────────────────────────────────────────────────────
+function setTradeMode(mode){
+  tradeMode=mode;
+  document.getElementById('tab-buy').className='trade-tab'+(mode==='buy'?' buy-active':'');
+  document.getElementById('tab-sell').className='trade-tab'+(mode==='sell'?' sell-active':'');
+  refreshTrade();
+}
+
+function adjustQty(delta){
+  const el=document.getElementById('trade-qty');
+  const v=Math.max(1,(parseInt(el.value)||1)+delta);
+  el.value=v; refreshTrade();
+}
+
+function refreshTrade(){
+  const qty=Math.max(1,parseInt(document.getElementById('trade-qty').value)||1);
+  const total=qty*currentPrice;
+  document.getElementById('ts-price').textContent='$'+currentPrice.toFixed(2);
+  document.getElementById('ts-qty').textContent=qty;
+  document.getElementById('ts-total').textContent='$'+total.toFixed(2);
+  document.getElementById('ts-label').textContent=tradeMode==='buy'?'Total a pagar':'Total a recibir';
+  const btn=document.getElementById('trade-btn');
+  if(tradeMode==='buy'){
+    btn.textContent='Comprar '+qty+' acción'+(qty>1?'es':'');
+    btn.className='btn-buy';
+  } else {
+    btn.textContent='Vender '+qty+' acción'+(qty>1?'es':'');
+    btn.className='btn-sell';
+  }
+}
+
+function executeTrade(){
+  if(!currentUser){showToast('Inicia sesión primero.');return;}
+  const usr=db.users[currentUser];
+  if(usr.isAdmin){showToast('El admin no opera en el mercado.');return;}
+  const qty=Math.max(1,parseInt(document.getElementById('trade-qty').value)||1);
+  const total=qty*currentPrice;
+  const msg=document.getElementById('trade-msg');
+
+  if(tradeMode==='buy'){
+    if(usr.cash<total){msg.style.color='var(--red)';msg.textContent='Saldo insuficiente. Necesitas $'+total.toFixed(2);return;}
+    // Weighted average cost
+    const prevTotal=usr.holdings*usr.avgCost;
+    usr.holdings+=qty;
+    usr.avgCost=(prevTotal+total)/usr.holdings;
+    usr.cash-=total;
+    volume+=Math.round(qty*12000+Math.random()*50000);
+    msg.style.color='var(--green)';
+    msg.textContent='✓ Compraste '+qty+' acción'+(qty>1?'es':'')+' por $'+total.toFixed(2);
+    showToast('🚀 Compraste '+qty+' $SPI por $'+total.toFixed(2));
+  } else {
+    if(usr.holdings<qty){msg.style.color='var(--red)';msg.textContent='No tienes suficientes acciones.';return;}
+    usr.holdings-=qty;
+    if(usr.holdings===0) usr.avgCost=0;
+    usr.cash+=total;
+    volume+=Math.round(qty*10000+Math.random()*30000);
+    msg.style.color='var(--red)';
+    msg.textContent='✓ Vendiste '+qty+' acción'+(qty>1?'es':'')+' por $'+total.toFixed(2);
+    showToast('💰 Vendiste '+qty+' $SPI — recibiste $'+total.toFixed(2));
+  }
+  refreshWallet();
+  if(usr.isAdmin) refreshUsersTable();
+}
+
+// ── ADMIN ─────────────────────────────────────────────────────
+function adminCreateUser(){
+  const name = document.getElementById('cu-name').value.trim();
+  const u    = document.getElementById('cu-user').value.trim().toLowerCase();
+  const pass = document.getElementById('cu-pass').value;
+  const cash = parseFloat(document.getElementById('cu-cash').value) || 0;
+  const shares = parseInt(document.getElementById('cu-shares').value) || 0;
+  const err  = document.getElementById('cu-error');
+  if(!name||!u||!pass){err.textContent='Completa nombre, usuario y contraseña.';return;}
+  if(pass.length<4){err.textContent='Contraseña mínimo 4 caracteres.';return;}
+  if(db.users[u]){err.textContent='Ese usuario ya existe.';return;}
+  if(u==='admin'){err.textContent='Nombre de usuario no disponible.';return;}
+  // Si se asignan acciones, el costo promedio es el precio actual
+  const avgCost = shares > 0 ? currentPrice : 0;
+  db.users[u] = { name, password:pass, isAdmin:false, cash, holdings:shares, avgCost };
+  err.style.color='var(--green)';
+  err.textContent='✓ Usuario creado correctamente.';
+  document.getElementById('cu-name').value='';
+  document.getElementById('cu-user').value='';
+  document.getElementById('cu-pass').value='';
+  document.getElementById('cu-cash').value='5000';
+  document.getElementById('cu-shares').value='0';
+  setTimeout(()=>{err.textContent='';err.style.color='var(--red)';},3000);
+  refreshUsersTable();
+  showToast('Usuario @'+u+' creado con $'+cash.toFixed(0)+' y '+shares+' acciones.');
+}
+
+function adminDeleteUser(uname){
+  if(!db.users[uname]||db.users[uname].isAdmin) return;
+  delete db.users[uname];
+  refreshUsersTable();
+  showToast('Usuario @'+uname+' eliminado.');
+}
+
+function toggleEditShares(uname){
+  const editDiv = document.getElementById('shares-edit-'+uname);
+  const isHidden = editDiv.style.display==='none' || editDiv.style.display==='';
+  if(isHidden){
+    editDiv.style.display='block';
+    const inp = document.getElementById('shares-input-'+uname);
+    inp.focus(); inp.select();
+  } else {
+    editDiv.style.display='none';
+  }
+}
+
+function cancelEditShares(uname){
+  const editDiv = document.getElementById('shares-edit-'+uname);
+  editDiv.style.display='none';
+  // restore original value
+  if(db.users[uname])
+    document.getElementById('shares-input-'+uname).value = db.users[uname].holdings;
+}
+
+function saveShares(uname){
+  const usr = db.users[uname];
+  if(!usr) return;
+  const newShares = Math.max(0, parseInt(document.getElementById('shares-input-'+uname).value)||0);
+  const oldShares = usr.holdings;
+  if(newShares === oldShares){
+    document.getElementById('shares-edit-'+uname).style.display='none';
+    return;
+  }
+
+  if(newShares > oldShares){
+    // Compra: restar el costo de las acciones nuevas del saldo
+    const addedShares = newShares - oldShares;
+    const cost = addedShares * currentPrice;
+    if(usr.cash < cost){
+      showToast('⚠️ @'+uname+' no tiene saldo suficiente ($'+usr.cash.toFixed(2)+' disponible, necesita $'+cost.toFixed(2)+')');
+      document.getElementById('shares-input-'+uname).value = oldShares;
+      return;
+    }
+    usr.cash -= cost;
+    // Recalcular costo promedio ponderado
+    const prevTotal = oldShares * usr.avgCost;
+    usr.avgCost = (prevTotal + cost) / newShares;
+    usr.holdings = newShares;
+    showToast('@'+uname+': +'+addedShares+' acciones · se descontaron $'+cost.toFixed(2));
+  } else {
+    // Venta: devolver el dinero al precio actual
+    const removedShares = oldShares - newShares;
+    const refund = removedShares * currentPrice;
+    usr.cash += refund;
+    if(newShares === 0) usr.avgCost = 0;
+    usr.holdings = newShares;
+    showToast('@'+uname+': -'+removedShares+' acciones · se acreditaron $'+refund.toFixed(2));
+  }
+
+  document.getElementById('shares-edit-'+uname).style.display='none';
+  refreshUsersTable();
+}
+
+function refreshUsersTable(){
+  const tbody=document.getElementById('users-tbody');
+  tbody.innerHTML='';
+  const users = Object.entries(db.users).filter(([,u])=>!u.isAdmin);
+  if(!users.length){
+    tbody.innerHTML='<tr><td colspan="6" style="color:var(--muted);padding:14px 4px;text-align:center">Sin usuarios registrados aún.</td></tr>';
+    return;
+  }
+  users.forEach(([uname,u])=>{
+    const holdVal = u.holdings * currentPrice;
+    const invested = u.holdings * u.avgCost;
+    const pnl = holdVal - invested;
+    const pnlPct = invested > 0 ? (pnl/invested*100) : 0;
+    const pnlClass = pnl >= 0 ? 'pnl-cell-up' : 'pnl-cell-down';
+    const pnlSign = pnl >= 0 ? '+' : '';
+    const pnlCell = u.holdings > 0
+      ? `<td class="${pnlClass}">${pnlSign}$${pnl.toFixed(0)}<br><span style="font-size:10px">${pnlSign}${pnlPct.toFixed(1)}%</span></td>`
+      : `<td style="color:var(--muted)">—</td>`;
+    const holdCell = u.holdings > 0
+      ? `$${holdVal.toFixed(0)}<br><span style="font-size:10px;color:var(--muted)">${u.holdings} × $${currentPrice.toFixed(0)}</span>`
+      : '—';
+    tbody.innerHTML+=`<tr id="row-${uname}">
+      <td><span style="font-weight:600">${u.name}</span><br><span style="color:var(--muted)">@${uname}</span></td>
+      <td>$${u.cash.toFixed(0)}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:5px;">
+          <span id="shares-display-${uname}" style="font-weight:600;min-width:24px">${u.holdings}</span>
+          <button class="btn-edit-shares" onclick="toggleEditShares('${uname}')" title="Editar acciones">✏️</button>
+        </div>
+        <div id="shares-edit-${uname}" style="display:none;margin-top:5px;display:none">
+          <div style="display:flex;gap:4px;align-items:center">
+            <input type="number" id="shares-input-${uname}" value="${u.holdings}" min="0"
+              style="width:70px;background:var(--surface3);border:0.5px solid var(--accent);border-radius:6px;padding:4px 6px;color:var(--text);font-size:12px;font-family:inherit;outline:none"/>
+            <button class="btn-save-shares" onclick="saveShares('${uname}')">✓</button>
+            <button class="btn-cancel-shares" onclick="cancelEditShares('${uname}')">✕</button>
+          </div>
+        </div>
+      </td>
+      <td>${holdCell}</td>
+      ${pnlCell}
+      <td><button class="btn-delete-user" onclick="adminDeleteUser('${uname}')">🗑</button></td>
+    </tr>`;
+  });
+}
+
+const EVENTS={
+  explosion:{type:'negative',pct:-0.12,msgs:['💥 ALERTA: Cohete de Space I explotó en lanzamiento — ventas masivas','🚨 Fallo en misión SPI-7 — inversores liquidan posiciones','📉 Pérdida del vehículo de lanzamiento — reguladores investigan']},
+  success:{type:'positive',pct:0.09,msgs:['🚀 ¡Éxito total! Misión completada — carga en órbita','✅ Space I logra aterrizaje récord — confianza inversora dispara','🌍 Satélite operativo — contratos comerciales confirmados']},
+  announcement:{type:'positive',pct:0.07,msgs:['📢 Space I firma contrato NASA $2.4B — mercado celebra','📰 Acuerdo con 14 países — demanda de $SPI se dispara','🌐 Nueva constelación de satélites anunciada — analistas elevan objetivo']},
+  turbulence:{type:'negative',pct:-0.05,msgs:['📉 Turbulencia global arrastra al sector aeroespacial','⚠️ Nuevas restricciones regulatorias al sector espacial privado','🌪️ Competidor anuncia cohete más barato — $SPI bajo presión']}
+};
+
+function animatePrice(target, steps){
+  // Animamos visualmente sin agregar puntos nuevos al timeline
+  // Solo actualizamos el ultimo punto del grafico
+  const start=currentPrice, diff=target-start; let step=0;
+  const iv=setInterval(()=>{
+    step++;
+    const noise=(Math.random()-0.5)*0.3;
+    const p=Math.max(0.01, start+diff*(step/steps)+noise);
+    // Sobreescribir el ultimo punto en lugar de agregar uno nuevo
+    currentPrice=parseFloat(p.toFixed(2));
+    priceHistory[priceHistory.length-1]=currentPrice;
+    if(currentPrice>high)high=currentPrice;
+    if(currentPrice<low)low=currentPrice;
+    chart.data.datasets[0].data=priceHistory;
+    chart.update('none');
+    updateUI();
+    if(currentUser) refreshWallet();
+    if(step>=steps){
+      clearInterval(iv);
+      // Al terminar la animacion, agregar UN solo punto con el precio final
+      const finalP=Math.max(0.01,parseFloat(target.toFixed(2)));
+      pushPrice(finalP, true);
+    }
+  }, 100);
+}
+
+function triggerEvent(type){
+  const ev=EVENTS[type];
+  const msg=ev.msgs[Math.floor(Math.random()*ev.msgs.length)];
+  const target=currentPrice*(1+ev.pct+(Math.random()-0.5)*0.02);
+  volume+=Math.round(Math.random()*800000+400000);
+  addNews(msg, ev.type);
+  animatePrice(Math.max(0.01,target), 10);
+  showToast('Evento publicado · '+(ev.type==='positive'?'📈 Acción al alza':'📉 Acción a la baja'));
+}
+
+function triggerCustom(){
+  const text=document.getElementById('custom-text').value.trim();
+  const dir=document.getElementById('custom-dir').value;
+  if(!text)return;
+  const pct=dir==='up'?(0.03+Math.random()*0.06):-(0.03+Math.random()*0.06);
+  volume+=Math.round(Math.random()*500000+200000);
+  addNews((dir==='up'?'📈 ':'📉 ')+text, dir==='up'?'positive':'negative');
+  animatePrice(Math.max(0.01,currentPrice*(1+pct)), 8);
+  document.getElementById('custom-text').value='';
+  showToast('Evento personalizado publicado ✓');
+}
+
+function addNews(text,type){
+  const list=document.getElementById('news-list');
+  const item=document.createElement('div');
+  item.className='news-item '+type;
+  item.innerHTML='<span class="news-time">'+getTime(marketMinute)+'</span>'+text;
+  list.prepend(item);
+  if(list.children.length>15) list.removeChild(list.lastChild);
+}
+
+// ── TOAST ─────────────────────────────────────────────────────
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+// ── MARKET STATUS BAR ────────────────────────────────────────
+function updateStatusBar(){
+  const open = isMarketOpen();
+  const t = nowGMT6();
+  const h=t.getHours(), m=t.getMinutes(), s=t.getSeconds();
+  const timeStr=(h<10?'0'+h:h)+':'+(m<10?'0'+m:m)+':'+(s<10?'0'+s:s)+' GMT-6';
+
+  let statusHtml;
+  if(open){
+    const closeMins=MARKET_CLOSE_H*60+MARKET_CLOSE_M;
+    const nowMins=h*60+m;
+    const rem=closeMins-nowMins;
+    const rh=Math.floor(rem/60), rm=rem%60;
+    statusHtml=`<span style="color:var(--green)">● Mercado abierto</span> &nbsp;·&nbsp; ${timeStr} &nbsp;·&nbsp; Cierra en ${rh}h ${rm}m`;
+  } else {
+    const openMins=MARKET_OPEN_H*60+MARKET_OPEN_M;
+    const nowMins=h*60+m;
+    let rem=openMins-nowMins;
+    if(rem<0) rem+=24*60;
+    const rh=Math.floor(rem/60), rm2=rem%60;
+    statusHtml=`<span style="color:var(--red)">● Mercado cerrado</span> &nbsp;·&nbsp; ${timeStr} &nbsp;·&nbsp; Abre en ${rh}h ${rm2}m`;
+  }
+  const bar=document.getElementById('market-status');
+  if(bar) bar.innerHTML=statusHtml;
+}
+
+// ── LIVE TICK — cada minuto exacto GMT-6 ──────────────────────
+let lastTickMinute = -1;
+
+function marketTick(){
+  const t = nowGMT6();
+  const currentMinute = t.getHours()*60+t.getMinutes();
+  updateStatusBar();
+
+  if(!isMarketOpen()) return;
+  if(currentMinute === lastTickMinute) return;
+  lastTickMinute = currentMinute;
+
+  const drift=(Math.random()-0.49)*1.4;
+  pushPrice(Math.max(0.01,currentPrice+drift), true);
+  volume += Math.round(Math.random()*80000+20000);
+}
+
+setInterval(marketTick, 1000);
+
+// keyboard enter on login/register
+document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+document.getElementById('reg-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doRegister();});
+</script>
+</body>
+</html>
