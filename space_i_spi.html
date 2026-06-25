@@ -301,6 +301,23 @@ nav{background:var(--surface);border-bottom:0.5px solid var(--border);display:fl
           Panel de administración
           <span class="admin-badge"><i class="ti ti-shield"></i> Admin</span>
         </div>
+
+        <!-- Market toggle -->
+        <div style="margin-bottom:1rem">
+          <button id="market-toggle-btn"
+            onclick="setMarketOverride(marketOverride===true ? false : true)"
+            style="width:100%;padding:13px;border-radius:var(--radius);border:0.5px solid var(--green);background:var(--green-dim);color:var(--green);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.2s">
+            🟢 Abrir mercado
+          </button>
+          <div style="text-align:center;margin-top:6px">
+            <span style="font-size:11px;color:var(--muted)">Modo automático: </span>
+            <button onclick="setMarketOverride(null)"
+              style="background:none;border:none;color:var(--accent);font-size:11px;cursor:pointer;font-family:inherit;text-decoration:underline">
+              restablecer horario GMT-6
+            </button>
+          </div>
+        </div>
+
         <div class="event-grid">
           <button class="evt-btn evt-explosion" onclick="triggerEvent('explosion')">
             <span style="font-size:20px">💥</span> Cohete explotó
@@ -401,6 +418,7 @@ nav{background:var(--surface);border-bottom:0.5px solid var(--border);display:fl
 const ADMIN_USER = 'admin';
 const ADMIN_PASS = 'admin123';
 const OPEN_PRICE = 165.00;
+let marketOverride = null; // null=auto, true=forzado abierto, false=forzado cerrado
 
 // Simple in-memory store (persists while page is open)
 let db = {
@@ -488,10 +506,41 @@ function nowGMT6(){
 }
 
 function isMarketOpen(){
+  if(marketOverride !== null) return marketOverride;
   const t = nowGMT6();
   const h = t.getHours(), m = t.getMinutes();
   const mins = h*60+m;
   return mins >= MARKET_OPEN_H*60+MARKET_OPEN_M && mins < MARKET_CLOSE_H*60+MARKET_CLOSE_M;
+}
+
+function setMarketOverride(state){
+  marketOverride = state;
+  updateMarketToggleBtn();
+  updateStatusBar();
+  if(state) showToast('🟢 Mercado abierto manualmente');
+  else if(state===false) showToast('🔴 Mercado cerrado manualmente');
+  else showToast('🔄 Mercado en modo automático');
+}
+
+function updateMarketToggleBtn(){
+  const btn = document.getElementById('market-toggle-btn');
+  if(!btn) return;
+  if(marketOverride === true){
+    btn.textContent = '🔴 Cerrar mercado';
+    btn.style.background = 'var(--red-dim)';
+    btn.style.color = 'var(--red)';
+    btn.style.borderColor = 'var(--red)';
+  } else if(marketOverride === false){
+    btn.textContent = '🟢 Abrir mercado';
+    btn.style.background = 'var(--green-dim)';
+    btn.style.color = 'var(--green)';
+    btn.style.borderColor = 'var(--green)';
+  } else {
+    btn.textContent = '🟢 Abrir mercado';
+    btn.style.background = 'var(--green-dim)';
+    btn.style.color = 'var(--green)';
+    btn.style.borderColor = 'var(--green)';
+  }
 }
 
 function realTimeLabel(){
